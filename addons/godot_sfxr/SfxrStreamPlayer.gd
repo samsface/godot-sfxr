@@ -471,15 +471,14 @@ func _random_preset():
 func _clear_buffer():
 	sfx_buffer = PoolVector2Array([])
 
-var gen:SfxrGenerator
+var gen
 
 func _build_buffer():
 	if not sfx_buffer:
 		print("generating new buffer")
-		gen = SfxrGenerator.new()
+		gen = GodotSFXRNative.new()
 		gen.init(self)
-		gen.connect("build_buffer_done", self, "_build_buffer_done")
-		gen.get_raw_buffer()
+		_build_buffer_done(gen.get_raw_buffer())
 
 func _build_buffer_done(buffer) -> void:
 	sfx_buffer = buffer
@@ -499,6 +498,5 @@ func play_sfx(clear_buffer=false):
 	if clear_buffer:
 		_clear_buffer()
 	_build_buffer()
-	yield(self, "build_buffer_done")
 	if not playing:
 		play()
