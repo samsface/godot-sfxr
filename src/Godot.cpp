@@ -1,11 +1,8 @@
 #include <Godot.hpp>
 #include <Node.hpp>
-#include <cstdint>
-#include <memory>
-#include <set>
 #include <array>
-#include <string>
 #include <algorithm>
+#include <random>
 
 namespace godot 
 {
@@ -94,6 +91,10 @@ class GodotSFXRNative : public Reference
     std::float_t flanger_offset_slide{};
     std::float_t gain{};
     //std::float_t sample_rate{};
+
+    std::random_device rd;
+    std::mt19937 mt{rd()};
+    std::uniform_real_distribution<std::float_t> dist{0.0, 1.0};
 
 public:
     void init(Object* params)
@@ -208,7 +209,6 @@ public:
 
     PoolVector2Array get_raw_buffer()
     {
-
         std::float_t fltp{};
         std::float_t fltdp{};
         std::float_t fltphp{};
@@ -216,7 +216,7 @@ public:
         std::array<std::float_t, 32> noise_buffer;
         for(auto& i : noise_buffer)
         {
-            //i = randf(); use godot or c++?>
+            i =  dist(mt);
         }
 
         std::size_t envelope_stage{};
@@ -335,7 +335,7 @@ public:
                     {
                         for(std::int64_t i{}; i < 32; i++)
                         {
-                            //noise_buffer[i] = randf() * 2 - 1
+                            noise_buffer[i] = dist(mt) * 2.0f - 1.0f;
                         }
                     }
                 }
