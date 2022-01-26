@@ -1,0 +1,1 @@
+addons/discord_game_sdk/readme.md
