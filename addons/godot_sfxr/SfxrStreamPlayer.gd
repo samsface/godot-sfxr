@@ -516,6 +516,9 @@ func play_debug_() -> void:
 
 func play_debug__() -> void:
 	_clear_buffer()
-	_build_buffer()
 	play()
 	playing_next_frame_ = false
+
+func play(from := 0.0) -> void:
+	_build_buffer()
+	.play()
