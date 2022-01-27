@@ -15,6 +15,6 @@ Server="res://addons/godot_sfxr/libgodot-sfxr.so"
 
 [dependencies]
 
-OSX.64=[ "res://addons/discord_game_sdk/discord_game_sdk.dylib" ]
-Windows.64=[ "res://addons/discord_game_sdk/discord_game_sdk.dll" ]
+OSX.64=[  ]
+Windows.64=[  ]
 X11.64=[  ]
