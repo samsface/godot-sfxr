@@ -44,7 +44,7 @@ _global_script_class_icons={
 
 [application]
 
-config/name="Discord Game SDK"
+config/name="Godot SFX"
 run/main_scene="res://test.tscn"
 config/icon="res://icon.png"
 

@@ -4,8 +4,7 @@
 [ext_resource path="res://addons/godot_sfxr/SfxrStreamPlayer.gd" type="Script" id=2]
 
 [sub_resource type="AudioStreamGenerator" id=1]
-mix_rate = 44000.0
-buffer_length = 2.46459
+buffer_length = 1.13197
 
 [node name="Node2D" type="Node2D"]
 script = ExtResource( 1 )
@@ -14,29 +13,30 @@ script = ExtResource( 1 )
 stream = SubResource( 1 )
 script = ExtResource( 2 )
 wave/type = 1
-sample_params/sound_vol = 0.663366
-sample_params/sample_rate = 44000.0
+sample_params/sound_vol = 0.5
+sample_params/sample_rate = 44100.0
 envelope/attack_time = 0.0
-envelope/sustain_time = 1.0
-envelope/punch_time = 0.0
-envelope/decay_time = 0.290526
-frequency/start_frequency = 0.247683
+envelope/sustain_time = 0.55624
+envelope/punch_time = 0.396153
+envelope/decay_time = 0.43564
+frequency/start_frequency = 0.216868
 frequency/min_freq_cutoff = 0.0
-frequency/slide = 0.502757
-frequency/delta_slide = -0.787129
-vibrato/depth = 0.173267
-vibrato/speed = 0.742574
-arpeggiation/frequency_mult = -0.306931
-arpeggiation/change_speed = 0.720297
-duty_cycle/duty_cycle = 0.265934
-duty_cycle/sweep = -0.767327
-retrigger/rate = 0.4443
-flanger/offset = -0.485149
-flanger/sweep = 0.549505
+frequency/slide = 0.0
+frequency/delta_slide = 0.0
+vibrato/depth = 0.0
+vibrato/speed = 0.0
+arpeggiation/frequency_mult = 0.0
+arpeggiation/change_speed = 0.434753
+duty_cycle/duty_cycle = 0.30857
+duty_cycle/sweep = 0.405346
+retrigger/rate = 0.0
+flanger/offset = 0.0
+flanger/sweep = 0.0
 low_pass_filter/cutoff_frequency = 1.0
-low_pass_filter/cutoff_sweep = 0.0
-low_pass_filter/resonance = 0.0
+low_pass_filter/cutoff_sweep = -0.0217865
+low_pass_filter/resonance = 0.90094
 high_pass_filter/cutoff_frequency = 0.0
 high_pass_filter/cutoff_sweep = 0.0
-actions/generator = null
+actions/generator = 9
+actions/forward = null
 actions/play = null

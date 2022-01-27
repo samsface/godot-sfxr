@@ -54,14 +54,14 @@ var sample_rate: float
 # Sfx buffer
 var sfx_buffer: PoolVector2Array
 
-var debug_play_timer:Timer
+var generator:int
 
 ##################################
 # Inspector Properties
 ##################################
 
 
-const PROPERTY_MAP = {
+const PROPERTY_MAP= {
 	# Sample params
 	"sample_params/sound_vol": {"name": "sound_vol", "hint_string": "0,1,0.000000001", "default": 0.50},
 	"sample_params/sample_rate": {"name": "sample_rate", "hint_string": "6000,44100,1", "default": 44100.0},
@@ -100,6 +100,7 @@ const PROPERTY_MAP = {
 
 
 func _get_property_list() -> Array:
+	print("get")
 	var props = []
 	props.append({
 		"name": "wave/type",
@@ -123,6 +124,10 @@ func _get_property_list() -> Array:
 		"hint_string": "-," + PoolStringArray(presets).join(",").capitalize(),
 	})
 	props.append({
+		"name": "actions/forward",
+		"type": TYPE_BOOL,
+	})
+	props.append({
 		"name": "actions/play",
 		"type": TYPE_BOOL,
 	})
@@ -134,6 +139,8 @@ func _get(property: String):
 		return self[PROPERTY_MAP[property]["name"]]
 	elif property == "wave/type":
 		return wave_type
+	elif property == "actions/generator":
+		return generator
 
 func _set(property: String, value) -> bool:
 	if property in PROPERTY_MAP:
@@ -149,10 +156,18 @@ func _set(property: String, value) -> bool:
 				play_debug_()
 		wave_type = value
 		return true
+	elif property == "actions/forward":
+		var presets_method = "_presets_" + str(SfxrGlobals.PRESETS.keys()[generator]).to_lower()
+		if has_method(presets_method):
+			call(presets_method)
+			property_list_changed_notify()
+			play_sfx(true)
 	elif property == "actions/generator":
+		#set(property, value)
 		if not value:
 			value = 0
-		var presets_method = "_presets_" + str(SfxrGlobals.PRESETS.keys()[value]).to_lower()
+		generator = value
+		var presets_method = "_presets_" + str(SfxrGlobals.PRESETS.keys()[generator]).to_lower()
 		if has_method(presets_method):
 			call(presets_method)
 			property_list_changed_notify()
@@ -169,12 +184,10 @@ func _set(property: String, value) -> bool:
 # Defaults
 ##################################
 
-
 func _set_defaults():
 	wave_type = SfxrGlobals.WAVE_SHAPES.SAWTOOTH
 	for property in PROPERTY_MAP:
 		self[PROPERTY_MAP[property]["name"]] = PROPERTY_MAP[property]["default"]
-
 
 func _init() -> void:
 	_set_defaults()
@@ -211,7 +224,7 @@ func rnd(rmax) -> float:
 
 
 func _presets_pickup():
-	_set_defaults()
+	#_set_defaults()
 	wave_type = SfxrGlobals.WAVE_SHAPES.SAWTOOTH
 	p_base_freq = 0.4 + frnd(0.5)
 	p_env_attack = 0
@@ -475,7 +488,6 @@ var gen
 
 func _build_buffer():
 	if not sfx_buffer:
-		print("generating new buffer")
 		gen = GodotSFXRNative.new()
 		gen.init(self)
 		_build_buffer_done(gen.get_raw_buffer())
@@ -491,7 +503,6 @@ func _build_buffer_done(buffer) -> void:
 	emit_signal("build_buffer_done")
 
 func play_debug_() -> void:
-	print("play_debug")
 	play_sfx(true)
 
 func play_sfx(clear_buffer=false):
