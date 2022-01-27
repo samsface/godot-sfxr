@@ -7,7 +7,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: ['ubuntu', 'windows']
+        os: ['ubuntu', 'windows', 'macos']
     runs-on: ${{ matrix.os }}-latest
     steps:
       - name: checkout
@@ -20,14 +20,14 @@ jobs:
         uses: actions/cache@v2
         with:
            path: ~/.conan
-           key: ${{ runner.os }}-conan-2
+           key: ${{ matrix.os }}-conan-2
       - name: build
         run: ./ci/ci.bash
         shell: bash
       - name: upload-artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: godot-discord-game-sdk-${{ matrix.os }}
+          name: build-${{ matrix.os }}
           path: work/install
   
   package:
