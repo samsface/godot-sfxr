@@ -64,7 +64,8 @@ var disable_cache := false
 # Inspector Properties
 ##################################
 
-const PROPERTY_MAP= {
+const PROPERTY_MAP = {
+	"wave/type": { "name": "wave_type", "type": TYPE_INT, "hint": PROPERTY_HINT_ENUM, "hint_string": "SQUARE,SAWTOOTH,SINE,NOISE",  "default": GodotSfxr.WAVE_SHAPES.SAWTOOTH },
 	# Sample params
 	"sample_params/sound_vol": {"name": "sound_vol", "hint_string": "0,1,0.000000001", "default": 0.50},
 	"sample_params/sample_rate": {"name": "sample_rate", "hint_string": "6000,44100,1", "default": 44100.0},
@@ -98,25 +99,20 @@ const PROPERTY_MAP= {
 	"low_pass_filter/resonance": {"name": "p_lpf_resonance", "hint_string": "0,1,0.000000001", "default": 0.0},
 	# High-pass filter
 	"high_pass_filter/cutoff_frequency": {"name": "p_hpf_freq", "hint_string": "0,1,0.000000001", "default": 0.0},
-	"high_pass_filter/cutoff_sweep": {"name": "p_hpf_ramp", "hint_string": "-1,1,0.000000001", "default": 0.0},
+	"high_pass_filter/cutoff_sweep": {"name": "p_hpf_ramp", "hint_string": "-1,1,0.000000001", "default": 0.0}
 }
 
 func _get_property_list() -> Array:
 	var props = []
-	props.append({
-		"name": "wave/type",
-		"type": TYPE_INT,
-		"hint": PROPERTY_HINT_ENUM,
-		"hint_string": PoolStringArray(SfxrGlobals.WAVE_SHAPES.keys()).join(",").capitalize(),
-	})
 	for property in PROPERTY_MAP:
+		var p = PROPERTY_MAP[property]
 		props.append({
 			"name": property,
-			"type": TYPE_REAL,
-			"hint": PROPERTY_HINT_RANGE,
-			"hint_string": PROPERTY_MAP[property]["hint_string"],
+			"type": p.get("type", TYPE_REAL),
+			"hint": p.get("hint", PROPERTY_HINT_RANGE),
+			"hint_string": p.get("hint_string"),
 		})
-	var presets = SfxrGlobals.PRESETS.keys()
+	var presets = GodotSfxr.PRESETS.keys()
 	presets.pop_front()
 	props.append({
 		"name": "actions/generator",
@@ -146,8 +142,6 @@ func _get_property_list() -> Array:
 func _get(property: String):
 	if property in PROPERTY_MAP:
 		return self[PROPERTY_MAP[property]["name"]]
-	elif property == "wave/type":
-		return wave_type
 	elif property == "actions/generator":
 		return generator
 	elif property == "cache/buffer":
@@ -166,15 +160,9 @@ func _set(property: String, value) -> bool:
 				play_debug_()
 		self[PROPERTY_MAP[property]["name"]] = value
 		return true
-	elif property == "wave/type":
-		if Engine.editor_hint:
-			if wave_type != value:
-				play_debug_()
-		wave_type = value
-		return true
 	elif property == "actions/forward":
 		if value:
-			var presets_method = "_presets_" + str(SfxrGlobals.PRESETS.keys()[generator]).to_lower()
+			var presets_method = "_presets_" + str(GodotSfxr.PRESETS.keys()[generator]).to_lower()
 			if has_method(presets_method):
 				call(presets_method)
 				property_list_changed_notify()
@@ -209,13 +197,14 @@ func _set(property: String, value) -> bool:
 ##################################
 
 func _set_defaults():
-	wave_type = SfxrGlobals.WAVE_SHAPES.SAWTOOTH
 	for property in PROPERTY_MAP:
 		self[PROPERTY_MAP[property]["name"]] = PROPERTY_MAP[property]["default"]
 
-func _init() -> void:
-	_set_defaults()
+func _ready() -> void:
+	if Engine.editor_hint:
+		return
 
+	_build_buffer()
 
 func property_can_revert(property: String):
 	return property in PROPERTY_MAP
@@ -248,8 +237,8 @@ func rnd(rmax) -> float:
 
 
 func _presets_pickup():
-	#_set_defaults()
-	wave_type = SfxrGlobals.WAVE_SHAPES.SAWTOOTH
+	_set_defaults()
+	wave_type = GodotSfxr.WAVE_SHAPES.SAWTOOTH
 	p_base_freq = 0.4 + frnd(0.5)
 	p_env_attack = 0
 	p_env_sustain = frnd(0.1)
@@ -263,7 +252,7 @@ func _presets_pickup():
 func _presets_laser():
 	_set_defaults()
 	wave_type = rnd(2)
-	if wave_type == SfxrGlobals.WAVE_SHAPES.SINE and rnd(1):
+	if wave_type == GodotSfxr.WAVE_SHAPES.SINE and rnd(1):
 		wave_type = rnd(1)
 	if rnd(2) == 0:
 		p_base_freq = 0.3 + frnd(0.6)
@@ -275,7 +264,7 @@ func _presets_laser():
 		if p_freq_limit < 0.2:
 			p_freq_limit = 0.2
 		p_freq_ramp = -0.15 - frnd(0.2)
-	if wave_type == SfxrGlobals.WAVE_SHAPES.SAWTOOTH:
+	if wave_type == GodotSfxr.WAVE_SHAPES.SAWTOOTH:
 		p_duty = 1
 	if rnd(1):
 		p_duty = frnd(0.5)
@@ -296,7 +285,7 @@ func _presets_laser():
 
 func _presets_explosion():
 	_set_defaults()
-	wave_type = SfxrGlobals.WAVE_SHAPES.NOISE
+	wave_type = GodotSfxr.WAVE_SHAPES.NOISE
 	if rnd(1):
 		p_base_freq = pow(0.1 + frnd(0.4), 2)
 		p_freq_ramp = -0.1 + frnd(0.4)
@@ -321,11 +310,10 @@ func _presets_explosion():
 		p_arp_speed = 0.6 + frnd(0.3)
 		p_arp_mod = 0.8 - frnd(1.6)
 
-
 func _presets_powerup():
 	_set_defaults()
 	if rnd(1):
-		wave_type = SfxrGlobals.WAVE_SHAPES.SAWTOOTH
+		wave_type = GodotSfxr.WAVE_SHAPES.SAWTOOTH
 		p_duty = 1
 	else:
 		p_duty = frnd(0.6)
@@ -346,11 +334,11 @@ func _presets_powerup():
 func _presets_hit():
 	_set_defaults()
 	wave_type = rnd(2)
-	if wave_type == SfxrGlobals.WAVE_SHAPES.SINE:
-		wave_type = SfxrGlobals.WAVE_SHAPES.NOISE
-	if wave_type == SfxrGlobals.WAVE_SHAPES.SQUARE:
+	if wave_type == GodotSfxr.WAVE_SHAPES.SINE:
+		wave_type = GodotSfxr.WAVE_SHAPES.NOISE
+	if wave_type == GodotSfxr.WAVE_SHAPES.SQUARE:
 		p_duty = frnd(0.6)
-	if wave_type == SfxrGlobals.WAVE_SHAPES.SAWTOOTH:
+	if wave_type == GodotSfxr.WAVE_SHAPES.SAWTOOTH:
 		p_duty = 1
 	p_base_freq = 0.2 + frnd(0.6)
 	p_freq_ramp = -0.3 - frnd(0.4)
@@ -363,7 +351,7 @@ func _presets_hit():
 
 func _presets_jump():
 	_set_defaults()
-	wave_type = SfxrGlobals.WAVE_SHAPES.SQUARE
+	wave_type = GodotSfxr.WAVE_SHAPES.SQUARE
 	p_duty = frnd(0.6)
 	p_base_freq = 0.3 + frnd(0.3)
 	p_freq_ramp = 0.1 + frnd(0.2)
@@ -379,7 +367,7 @@ func _presets_jump():
 func _presets_blip():
 	_set_defaults()
 	wave_type = rnd(1)
-	if wave_type == SfxrGlobals.WAVE_SHAPES.SQUARE:
+	if wave_type == GodotSfxr.WAVE_SHAPES.SQUARE:
 		p_duty = frnd(0.6)
 	else:
 		p_duty = 1
@@ -411,7 +399,7 @@ func _presets_synth():
 
 func _presets_tone():
 	_set_defaults()
-	wave_type = SfxrGlobals.WAVE_SHAPES.SINE
+	wave_type = GodotSfxr.WAVE_SHAPES.SINE
 	p_base_freq = 0.35173364 # 440 Hz
 	p_env_attack = 0
 	p_env_sustain = 0.6641 # 1 sec
@@ -495,7 +483,7 @@ func _presets_mutate():
 	if rnd(1): p_arp_mod += frnd(0.1) - 0.05
 
 func _random_preset():
-	var preset = SfxrGlobals.PRESETS.keys()[(randi() % (len(SfxrGlobals.PRESETS) - 1)) + 1].to_lower()
+	var preset = GodotSfxr.PRESETS.keys()[(randi() % (len(GodotSfxr.PRESETS) - 1)) + 1].to_lower()
 	call("_presets_" + preset)
 
 ##################################
@@ -531,9 +519,3 @@ func play_debug__() -> void:
 	_build_buffer()
 	play()
 	playing_next_frame_ = false
-
-func _ready() -> void:
-	if Engine.editor_hint:
-		return
-
-	_build_buffer()

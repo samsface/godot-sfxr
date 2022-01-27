@@ -7,9 +7,11 @@ reloadable=true
 
 [entry]
 
-OSX.64="res://addons/discord_game_sdk/libdiscord-game-sdk-godot.dylib"
-Windows.64="res://addons/discord_game_sdk/discord-game-sdk-godot.dll"
+OSX.64="res://addons/godot_sfxr/libgodot-sfxr.dylib"
+Windows.64="res://addons/godot_sfxr/godot-sfxr.dll"
 X11.64="res://addons/godot_sfxr/libgodot-sfxr.so"
+Server.64="res://addons/godot_sfxr/libgodot-sfxr.so"
+Server="res://addons/godot_sfxr/libgodot-sfxr.so"
 
 [dependencies]
 
