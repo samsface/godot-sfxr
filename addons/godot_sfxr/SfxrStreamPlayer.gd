@@ -2,8 +2,6 @@ tool
 extends AudioStreamPlayer
 class_name SfxrStreamPlayer
 
-signal build_buffer_done
-
 # Wave Shape
 var wave_type: int
 
@@ -52,14 +50,19 @@ var sound_vol: float
 var sample_rate: float
 
 # Sfx buffer
-var sfx_buffer: PoolVector2Array
+#var sfx_buffer: PoolVector2Array
 
 var generator:int
+
+var playing_next_frame_ := false
+
+var sfx_buffer := PoolVector2Array()
+
+var disable_cache := false
 
 ##################################
 # Inspector Properties
 ##################################
-
 
 const PROPERTY_MAP= {
 	# Sample params
@@ -98,9 +101,7 @@ const PROPERTY_MAP= {
 	"high_pass_filter/cutoff_sweep": {"name": "p_hpf_ramp", "hint_string": "-1,1,0.000000001", "default": 0.0},
 }
 
-
 func _get_property_list() -> Array:
-	print("get")
 	var props = []
 	props.append({
 		"name": "wave/type",
@@ -124,6 +125,14 @@ func _get_property_list() -> Array:
 		"hint_string": "-," + PoolStringArray(presets).join(",").capitalize(),
 	})
 	props.append({
+		"name": "cache/buffer",
+		"type": TYPE_VECTOR2_ARRAY,
+	})
+	props.append({
+		"name": "cache/disable",
+		"type": TYPE_BOOL,
+	})
+	props.append({
 		"name": "actions/forward",
 		"type": TYPE_BOOL,
 	})
@@ -141,6 +150,13 @@ func _get(property: String):
 		return wave_type
 	elif property == "actions/generator":
 		return generator
+	elif property == "cache/buffer":
+		if not disable_cache:
+			return sfx_buffer
+		else:
+			return PoolVector2Array()
+	elif property == "cache/disable":
+		return disable_cache
 
 func _set(property: String, value) -> bool:
 	if property in PROPERTY_MAP:
@@ -157,26 +173,34 @@ func _set(property: String, value) -> bool:
 		wave_type = value
 		return true
 	elif property == "actions/forward":
-		var presets_method = "_presets_" + str(SfxrGlobals.PRESETS.keys()[generator]).to_lower()
-		if has_method(presets_method):
-			call(presets_method)
-			property_list_changed_notify()
-			play_sfx(true)
+		if value:
+			var presets_method = "_presets_" + str(SfxrGlobals.PRESETS.keys()[generator]).to_lower()
+			if has_method(presets_method):
+				call(presets_method)
+				property_list_changed_notify()
+				play_debug_()
+		return true
 	elif property == "actions/generator":
-		#set(property, value)
 		if not value:
 			value = 0
 		generator = value
-		var presets_method = "_presets_" + str(SfxrGlobals.PRESETS.keys()[generator]).to_lower()
-		if has_method(presets_method):
-			call(presets_method)
-			property_list_changed_notify()
-			play_sfx(true)
 		return true
 	elif property == "actions/play":
 		if value:
-			play_sfx(true)
+			playing_next_frame_ = false
+			play_debug_()
 		return true
+	elif property == "cache/disable":
+		disable_cache = value
+		if disable_cache:
+			sfx_buffer.resize(0)
+			property_list_changed_notify()
+		else:
+			_build_buffer()
+			property_list_changed_notify()
+		return true
+	elif property == "cache/buffer":
+		sfx_buffer = value
 	return false
 
 
@@ -394,7 +418,6 @@ func _presets_tone():
 	p_env_decay = 0
 	p_env_punch = 0
 
-
 func _presets_click():
 	var base = ["explosion", "hit"][rnd(1)]
 	call("_presets_" + base)
@@ -471,43 +494,46 @@ func _presets_mutate():
 	if rnd(1): p_arp_speed += frnd(0.1) - 0.05
 	if rnd(1): p_arp_mod += frnd(0.1) - 0.05
 
-
 func _random_preset():
 	var preset = SfxrGlobals.PRESETS.keys()[(randi() % (len(SfxrGlobals.PRESETS) - 1)) + 1].to_lower()
 	call("_presets_" + preset)
-
 
 ##################################
 # Playback
 ##################################
 
 func _clear_buffer():
-	sfx_buffer = PoolVector2Array([])
-
-var gen
+	sfx_buffer.resize(0)
 
 func _build_buffer():
 	if not sfx_buffer:
-		gen = GodotSFXRNative.new()
+		print("generating")
+		var gen = GodotSFXRNative.new()
 		gen.init(self)
-		_build_buffer_done(gen.get_raw_buffer())
+		sfx_buffer = gen.get_raw_buffer()
 
-func _build_buffer_done(buffer) -> void:
-	sfx_buffer = buffer
-	var duration = len(sfx_buffer) / sample_rate
+	var duration := len(sfx_buffer) / sample_rate
 	stream = AudioStreamGenerator.new()
 	stream.mix_rate = sample_rate
 	stream.buffer_length = duration
-	var pb: AudioStreamGeneratorPlayback = get_stream_playback()
+	var pb := get_stream_playback()
 	pb.push_buffer(sfx_buffer)
-	emit_signal("build_buffer_done")
 
 func play_debug_() -> void:
-	play_sfx(true)
+	if playing_next_frame_:
+		return
 
-func play_sfx(clear_buffer=false):
-	if clear_buffer:
-		_clear_buffer()
+	playing_next_frame_ = true
+	get_tree().connect("idle_frame", self, "play_debug__", [], CONNECT_ONESHOT)
+
+func play_debug__() -> void:
+	_clear_buffer()
 	_build_buffer()
-	if not playing:
-		play()
+	play()
+	playing_next_frame_ = false
+
+func _ready() -> void:
+	if Engine.editor_hint:
+		return
+
+	_build_buffer()
