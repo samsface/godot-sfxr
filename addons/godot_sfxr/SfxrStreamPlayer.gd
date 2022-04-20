@@ -50,13 +50,9 @@ var sound_vol: float
 var sample_rate: float
 
 # Sfx buffer
-#var sfx_buffer: PoolVector2Array
-
 var generator:int
 
 var playing_next_frame_ := false
-
-var sfx_buffer := PoolVector2Array()
 
 var disable_cache := false
 
@@ -121,14 +117,6 @@ func _get_property_list() -> Array:
 		"hint_string": "-," + PoolStringArray(presets).join(",").capitalize(),
 	})
 	props.append({
-		"name": "cache/buffer",
-		"type": TYPE_VECTOR2_ARRAY,
-	})
-	props.append({
-		"name": "cache/disable",
-		"type": TYPE_BOOL,
-	})
-	props.append({
 		"name": "actions/forward",
 		"type": TYPE_BOOL,
 	})
@@ -144,13 +132,6 @@ func _get(property: String):
 		return self[PROPERTY_MAP[property]["name"]]
 	elif property == "actions/generator":
 		return generator
-	elif property == "cache/buffer":
-		if not disable_cache:
-			return sfx_buffer
-		else:
-			return PoolVector2Array()
-	elif property == "cache/disable":
-		return disable_cache
 
 func _set(property: String, value) -> bool:
 	if property in PROPERTY_MAP:
@@ -178,17 +159,6 @@ func _set(property: String, value) -> bool:
 			playing_next_frame_ = false
 			play_debug_()
 		return true
-	elif property == "cache/disable":
-		disable_cache = value
-		if disable_cache:
-			sfx_buffer.resize(0)
-			property_list_changed_notify()
-		else:
-			_build_buffer()
-			property_list_changed_notify()
-		return true
-	elif property == "cache/buffer":
-		sfx_buffer = value
 	return false
 
 
@@ -490,22 +460,15 @@ func _random_preset():
 # Playback
 ##################################
 
-func _clear_buffer():
-	sfx_buffer.resize(0)
-
 func _build_buffer():
-	if not sfx_buffer:
+	if not stream:
 		print("generating")
 		var gen = GodotSFXRNative.new()
 		gen.init(self)
-		sfx_buffer = gen.get_raw_buffer()
-
-	var duration := len(sfx_buffer) / sample_rate
-	stream = AudioStreamGenerator.new()
-	stream.mix_rate = sample_rate
-	stream.buffer_length = duration
-	var pb := get_stream_playback()
-	pb.push_buffer(sfx_buffer)
+		stream = AudioStreamSample.new()
+		stream.mix_rate = 44100
+		stream.format = AudioStreamSample.FORMAT_16_BITS
+		stream.data = gen.get_raw_buffer()
 
 func play_debug_() -> void:
 	if playing_next_frame_:
@@ -515,7 +478,7 @@ func play_debug_() -> void:
 	get_tree().connect("idle_frame", self, "play_debug__", [], CONNECT_ONESHOT)
 
 func play_debug__() -> void:
-	_clear_buffer()
+	stream = null
 	play()
 	playing_next_frame_ = false
 

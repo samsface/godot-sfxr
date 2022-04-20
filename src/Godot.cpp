@@ -1,8 +1,11 @@
 #include <Godot.hpp>
 #include <Node.hpp>
 #include <array>
+#include <vector>   
 #include <algorithm>
+#include <bitset>
 #include <random>
+#include <fstream>
 
 namespace godot 
 {
@@ -207,7 +210,7 @@ public:
         }
     }
 
-    PoolVector2Array get_raw_buffer()
+    PoolByteArray get_raw_buffer()
     {
         std::float_t fltp{};
         std::float_t fltdp{};
@@ -230,7 +233,7 @@ public:
 
         std::array<std::float_t, 1024> flanger_buffer{};
 
-        PoolVector2Array res;
+        PoolByteArray res;
 
         std::float_t sample_sum{};
         std::float_t num_summed{};
@@ -427,7 +430,13 @@ public:
             sample = sample / 8.0f * 1.0f;//SfxrGlobals.MASTER_VOLUME;
             sample *= gain;
 
-            res.append(Vector2(sample, sample));
+            sample = std::clamp(sample, -1.0f, 1.0f);
+
+            auto const x = static_cast<std::uint16_t>(sample * 32000.0f);
+            auto const& a = reinterpret_cast<std::array<std::uint8_t, 2> const&>(x);
+
+            res.append(a[0]);
+            res.append(a[1]);
         }
 
         return res;
